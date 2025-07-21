@@ -1,0 +1,13 @@
+# Target labels
+ bootloader
+# Source files and their labels
+/Users/timmyli/ir-sensor-controller/cmake-build-debug-esp32-v525/CMakeFiles/bootloader
+/Users/timmyli/ir-sensor-controller/cmake-build-debug-esp32-v525/CMakeFiles/bootloader.rule
+/Users/timmyli/ir-sensor-controller/cmake-build-debug-esp32-v525/CMakeFiles/bootloader-complete.rule
+/Users/timmyli/ir-sensor-controller/cmake-build-debug-esp32-v525/bootloader-prefix/src/bootloader-stamp/bootloader-build.rule
+/Users/timmyli/ir-sensor-controller/cmake-build-debug-esp32-v525/bootloader-prefix/src/bootloader-stamp/bootloader-configure.rule
+/Users/timmyli/ir-sensor-controller/cmake-build-debug-esp32-v525/bootloader-prefix/src/bootloader-stamp/bootloader-download.rule
+/Users/timmyli/ir-sensor-controller/cmake-build-debug-esp32-v525/bootloader-prefix/src/bootloader-stamp/bootloader-install.rule
+/Users/timmyli/ir-sensor-controller/cmake-build-debug-esp32-v525/bootloader-prefix/src/bootloader-stamp/bootloader-mkdir.rule
+/Users/timmyli/ir-sensor-controller/cmake-build-debug-esp32-v525/bootloader-prefix/src/bootloader-stamp/bootloader-patch.rule
+/Users/timmyli/ir-sensor-controller/cmake-build-debug-esp32-v525/bootloader-prefix/src/bootloader-stamp/bootloader-update.rule
