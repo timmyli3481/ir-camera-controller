@@ -22,8 +22,8 @@ void flight_controller_init(void) {
         delete crsf2;
     }
 
-    crsf =new CRSF(UART_NUM_1, 16, 17, 420000); // RX=16, TX=17, 420k baud
-    crsf2 =new CRSF(UART_NUM_2, 33, 32, 420000); // RX=16, TX=17, 420k baud
+    crsf =new CRSF(UART_NUM_1, 23, 19, 420000); // RX=16, TX=17, 420k baud
+    crsf2 =new CRSF(UART_NUM_2, 17, 16, 420000); // RX=16, TX=17, 420k baud
 
     if (!crsf->isInitialized()) {
         ESP_LOGE("MAIN", "Failed to initialize CRSF");

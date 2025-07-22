@@ -4,6 +4,8 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "init.h"
+#include "flight-controller.h"
+#include "gimbal-control.h"
 #define MAIN_APP_TAG "MAIN_APP" // Renamed TAG to avoid conflict with ir-camera.c
 
 extern "C" void app_main(void)
@@ -17,11 +19,18 @@ extern "C" void app_main(void)
     init();
     ESP_LOGI(MAIN_APP_TAG, "Finished Running Init Program");
 
-    BaseType_t xReturned = xTaskCreate(uart_camera_task, "uart_task", 4096, NULL, 10, NULL);
-    if (xReturned != pdPASS) {
-        ESP_LOGE(MAIN_APP_TAG, "Failed to create UART camera task");
+    // BaseType_t xReturned = xTaskCreate(uart_camera_task, "uart_task", 4096, NULL, 10, NULL);
+    // if (xReturned != pdPASS) {
+    //     ESP_LOGE(MAIN_APP_TAG, "Failed to create UART camera task");
+    // } else {
+    //     ESP_LOGI(MAIN_APP_TAG, "UART camera task created successfully");
+    // }
+
+    BaseType_t GimbalTaskxReturned = xTaskCreate(gimbal_control_task, "gimbal_task", 4096, NULL, 10, NULL);
+    if (GimbalTaskxReturned != pdPASS) {
+        ESP_LOGE(MAIN_APP_TAG, "Failed to create Gimbal control task");
     } else {
-        ESP_LOGI(MAIN_APP_TAG, "UART camera task created successfully");
+        ESP_LOGI(MAIN_APP_TAG, "Gimbal control task created successfully");
     }
 
 

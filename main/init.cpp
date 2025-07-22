@@ -1,6 +1,7 @@
 #include "init.h"
 
 #include <esp_log.h>
+#include <gimbal-control.h>
 
 #include "ir-camera.h"
 #include "flight-controller.h"
@@ -17,5 +18,9 @@ void init(void) {
     ESP_LOGI(TAG,"Initializing Flight Controller");
     flight_controller_init();
     ESP_LOGI(TAG,"Finished Initializing Flight Controller");
+    ESP_LOGI(TAG,"Initializing Gimbal Control");
+    gimbal_control_init();
+    ESP_LOGI(TAG,"Finished Initializing Gimbal Control");
     ESP_LOGI(TAG,"Finished Running Init Programs");
+    ESP_LOGI(TAG,"Setup Complete");
 }
