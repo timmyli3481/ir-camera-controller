@@ -8,10 +8,6 @@
 #define LOG_LOCAL_LEVEL CONFIG_LOG_MAXIMUM_LEVEL
 #endif
 
-#ifndef ESP_LOG_LEVEL
-#define ESP_LOG_LEVEL LOG_LOCAL_LEVEL
-#endif
-
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "driver/uart.h"
@@ -46,10 +42,12 @@ CRSF::CRSF(uart_port_t uart_num, int rx_pin, int tx_pin, uint32_t baud)
     uart_config_t cfg = {
         .baud_rate = (int)baud,
         .data_bits = UART_DATA_8_BITS,
-        .parity    = UART_PARITY_DISABLE,
+        .parity = UART_PARITY_DISABLE,
         .stop_bits = UART_STOP_BITS_1,
         .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+        .rx_flow_ctrl_thresh = 0,
         .source_clk = UART_SCLK_DEFAULT,
+        .flags = {}
     };
 
     esp_err_t err;
@@ -77,7 +75,7 @@ CRSF::CRSF(uart_port_t uart_num, int rx_pin, int tx_pin, uint32_t baud)
     uart_registry[uart_num] = this;
     initialized = true;
 
-    ESP_LOGI(TAG, "CRSF UART initialized on port %d @ %u baud (RX:%d, TX:%d)", 
+    ESP_LOGI(TAG, "CRSF UART initialized on port %d @ %" PRIu32 " baud (RX:%d, TX:%d)",
              uart_num, baud, rx_pin, tx_pin);
 }
 
@@ -597,4 +595,3 @@ uint16_t us_to_crsf(uint16_t us_value)
 }
 
 } // extern "C"
-

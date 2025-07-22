@@ -6,7 +6,7 @@
 #include "init.h"
 #define MAIN_APP_TAG "MAIN_APP" // Renamed TAG to avoid conflict with ir-camera.c
 
-void app_main(void)
+extern "C" void app_main(void)
 {
     // Set log levels for both tags
     esp_log_level_set(MAIN_APP_TAG, ESP_LOG_DEBUG);
@@ -17,12 +17,12 @@ void app_main(void)
     init();
     ESP_LOGI(MAIN_APP_TAG, "Finished Running Init Program");
 
-    // BaseType_t xReturned = xTaskCreate(uart_camera_task, "uart_task", 4096, NULL, 10, NULL);
-    // if (xReturned != pdPASS) {
-    //     ESP_LOGE(MAIN_APP_TAG, "Failed to create UART camera task");
-    // } else {
-    //     ESP_LOGI(MAIN_APP_TAG, "UART camera task created successfully");
-    // }
+    BaseType_t xReturned = xTaskCreate(uart_camera_task, "uart_task", 4096, NULL, 10, NULL);
+    if (xReturned != pdPASS) {
+        ESP_LOGE(MAIN_APP_TAG, "Failed to create UART camera task");
+    } else {
+        ESP_LOGI(MAIN_APP_TAG, "UART camera task created successfully");
+    }
 
 
 
