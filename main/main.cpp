@@ -6,6 +6,9 @@
 #include "init.h"
 #include "flight-controller.h"
 #include "gimbal-control.h"
+#include "main.h"
+
+#include <gimbal-controller.h>
 #define MAIN_APP_TAG "MAIN_APP" // Renamed TAG to avoid conflict with ir-camera.c
 
 extern "C" void app_main(void)
@@ -26,7 +29,7 @@ extern "C" void app_main(void)
     //     ESP_LOGI(MAIN_APP_TAG, "UART camera task created successfully");
     // }
 
-    BaseType_t GimbalTaskxReturned = xTaskCreate(gimbal_control_task, "gimbal_task", 4096, NULL, 10, NULL);
+    BaseType_t GimbalTaskxReturned = xTaskCreate(gimbal_controller_task, "gimbal_task", 4096, NULL, 10, NULL);
     if (GimbalTaskxReturned != pdPASS) {
         ESP_LOGE(MAIN_APP_TAG, "Failed to create Gimbal control task");
     } else {

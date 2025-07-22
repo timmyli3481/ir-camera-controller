@@ -15,6 +15,8 @@
 // "FIRE,-XXX.XX,-XXX.XX,NNNNNN,NNN,NNN \r\n" -> 6 (FIRE,) + 8 (angle) + 8 (angle) + 7 (pixels) + 4 (cx) + 4 (cy) + 5 (spaces/CRLF) ~ 40 chars.
 // Let's make it a bit larger for safety.
 #define CAMERA_RX_BUFFER_SIZE 256 // Changed from 64 to 256
+#define CAMERA_X_FOV 90.0
+#define CAMERA_Y_FOV 60.0
 
 // Struct to hold decoded camera data
 typedef struct {
@@ -26,8 +28,6 @@ typedef struct {
     int cy;
 } camera_data_t;
 
-// Global instance to store the latest camera data
-extern camera_data_t g_camera_data;
 
 // Function to initialize UART for camera communication
 void uart_camera_init();
