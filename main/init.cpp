@@ -15,6 +15,7 @@
 #define TAG "INIT"
 
 SemaphoreHandle_t camera_data_mutex;
+QueueHandle_t crsf_commands_queue;
 
 void init(void) {
     esp_log_level_set(TAG, ESP_LOG_INFO);
@@ -32,6 +33,8 @@ void init(void) {
     ESP_LOGI(TAG, "Running Mutex Creation Programs");
     camera_data_mutex=xSemaphoreCreateMutex();
     ESP_LOGI(TAG, "Finished Running Mutex Creation Programs");
-
+    ESP_LOGI(TAG, "Running Queue Creation Programs");
+    crsf_commands_queue=xQueueCreate(10,sizeof(crsf_command_t));
+    ESP_LOGI(TAG, "Finished Running Queue Creation Programs");
     ESP_LOGI(TAG, "Setup Complete");
 }

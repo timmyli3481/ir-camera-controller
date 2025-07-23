@@ -128,7 +128,7 @@ void uart_camera_task(void *pv)
     while (1) {
         // Read multiple bytes at once with shorter timeout
         int len = softuart_read_bytes(
-            SOFT_UART_PORT, rx_data, sizeof(rx_data), 2 / portTICK_PERIOD_MS);
+            SOFT_UART_PORT, rx_data, sizeof(rx_data), 1 / portTICK_PERIOD_MS);
 
         if (len > 0) {
             // Process all received bytes
@@ -170,6 +170,8 @@ void uart_camera_task(void *pv)
             ESP_LOGI(TAG, "UART camera task heartbeat - still running");
             heartbeat_counter = 0;
         }
+
+        // ESP_LOGI(TAG, "UART camera task running");
 
         if (xSemaphoreTake(camera_data_mutex, 0) == pdPASS) {
             g_camera_data = l_camera_data;

@@ -18,4 +18,6 @@ struct gimbal_state {
     bool tracking;
 };
 
+extern gimbal_state gimbal_state_g;
+
 #endif //GIMBAL_CONTROLLER_H

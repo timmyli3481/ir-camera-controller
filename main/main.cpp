@@ -42,6 +42,13 @@ extern "C" void app_main(void)
         ESP_LOGI(MAIN_APP_TAG, "Crsf control task created successfully");
     }
 
+    BaseType_t FlightTaskxReturned = xTaskCreatePinnedToCore(flight_controller_task, "flight_task", 4096, NULL, 10, NULL,0);
+    if (FlightTaskxReturned != pdPASS) {
+        ESP_LOGE(MAIN_APP_TAG, "Failed to create Flight control task");
+    } else {
+        ESP_LOGI(MAIN_APP_TAG, "Flight control task created successfully");
+    }
+
     // Option 2: Delete app_main task itself (if no further main_task activity is needed)
     ESP_LOGI(MAIN_APP_TAG, "Setup complete, deleting main task.");
     vTaskDelete(NULL); // Deletes the current task (main_task)

@@ -8,6 +8,8 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 
+
 extern SemaphoreHandle_t camera_data_mutex;
+extern QueueHandle_t crsf_commands_queue;
 
 #endif //MAIN_H

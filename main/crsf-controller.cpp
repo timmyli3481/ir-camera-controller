@@ -5,11 +5,21 @@
 #include "freertos/task.h"
 
 #include "crsf.h"
+#include "main.h"
 #include "hal/gpio_types.h"
 
 
 static CRSF* crsf = nullptr;
 static CRSF* crsf2 = nullptr;
+
+static crsf_command_t last_command = {
+    .throttle = {.value = 0, .is_null = true},
+    .yaw = {.value = 0, .is_null = true},
+    .pitch = {.value = 0, .is_null = true},
+    .roll = {.value = 0, .is_null = true},
+};
+
+bool should_send = false;
 
 
 void crsf_controller_init(void) {
@@ -47,8 +57,34 @@ void crsf_controller_task(void *pvParameters) {
             crsf->poll(true);
         }
 
-        // Check if we have fresh channels from the first CRSF instance
         if (crsf && crsf->getChannels(&channels)) {
+            should_send = true;
+            ESP_LOGD("CRSF_CONTROLLER", "Channels received successfully");
+        }
+
+        if (xQueueReceive(crsf_commands_queue, &last_command, 0) == pdPASS) {
+            should_send = true;
+            ESP_LOGD("CRSF_CONTROLLER", "Command received successfully");
+        }
+
+        if (!last_command.throttle.is_null) {
+            channels.channels[3] = last_command.throttle.value;
+        }
+
+        if (!last_command.yaw.is_null) {
+            channels.channels[1] = last_command.yaw.value;
+        }
+
+        if (!last_command.pitch.is_null) {
+            channels.channels[0] = last_command.pitch.value;
+        }
+
+        if (!last_command.roll.is_null) {
+            channels.channels[2] = last_command.roll.value;
+        }
+
+        // Check if we have fresh channels from the first CRSF instance
+        if (should_send) {
             // Log the channel values
             // ESP_LOGI("CRSF_CONTROLLER", "Channels: [%u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u, %u] (timestamp: %llu)",
             //     channels.channels[0], channels.channels[1], channels.channels[2], channels.channels[3],
