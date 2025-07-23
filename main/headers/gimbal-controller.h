@@ -9,17 +9,13 @@
 void gimbal_controller_init();
 void gimbal_controller_task(void *parameters);
 
-struct gimbal_controller_input {
-    bool tracking;
-    float target_x;
-    float target_y;
-};
 
 struct gimbal_state {
-    uint16_t servo_0_angle;
-    uint16_t servo_1_angle;
-    bool servo_1_adding;
+    float servo_0_angle;
+    float servo_1_angle;
     bool servo_0_adding;
+    bool servo_1_adding;
+    bool tracking;
 };
 
 #endif //GIMBAL_CONTROLLER_H

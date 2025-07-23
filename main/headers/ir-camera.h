@@ -28,6 +28,9 @@ typedef struct {
     int cy;
 } camera_data_t;
 
+// Global variable to store decoded camera data
+extern camera_data_t g_camera_data;
+
 
 // Function to initialize UART for camera communication
 void uart_camera_init();

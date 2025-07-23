@@ -110,7 +110,7 @@ private:
     void process_link_statistics(const uint8_t *payload, uint8_t payload_len);
     void process_battery_sensor(const uint8_t *payload, uint8_t payload_len);
     void process_attitude(const uint8_t *payload, uint8_t payload_len);
-    void process_frame(void);
+    void process_frame(bool channels_only = false);
 
     // Static registry for UART->CRSF mapping
     static CRSF* uart_registry[UART_NUM_MAX];
@@ -146,8 +146,9 @@ public:
     /**
      * Poll for incoming CRSF data and process frames
      * Call this regularly in your main loop or task
+     * @param channels_only If true, only process RC channel frames, ignore other frame types
      */
-    void poll(void);
+    void poll(bool channels_only = false);
 
     /**
      * Get the latest received channels

@@ -289,7 +289,7 @@ void CRSF::process_attitude(const uint8_t *payload, uint8_t payload_len)
              attitude.pitch, attitude.roll, attitude.yaw);
 }
 
-void CRSF::process_frame(void)
+void CRSF::process_frame(bool channels_only)
 {
     const uint8_t *frame = buffer;
     uint8_t len_field = frame[1];
@@ -298,6 +298,12 @@ void CRSF::process_frame(void)
     // Validate minimum frame length
     if (len_field < 2) {
         ESP_LOGW(TAG, "Frame too short: len_field=%d", len_field);
+        return;
+    }
+
+    // If channels_only mode is enabled, skip non-channel frames
+    if (channels_only && type != CRSF_FRAMETYPE_RC_CHANNELS_PACKED) {
+        ESP_LOGD(TAG, "Skipping non-channel frame type: 0x%02X", type);
         return;
     }
 
@@ -323,7 +329,7 @@ void CRSF::process_frame(void)
                 fresh_channels = true;
                 ESP_LOGD(TAG, "Received RC channels");
             } else {
-                ESP_LOGW(TAG, "Invalid RC channels payload length: %d", payload_len);
+                ESP_LOGW(TAG, "Invalid RC channels payload length: %d bytes", payload_len);
             }
             break;
 
@@ -343,161 +349,182 @@ void CRSF::process_frame(void)
             ESP_LOGD(TAG, "Received heartbeat");
             break;
 
+        case CRSF_FRAMETYPE_GPS:
+        case CRSF_FRAMETYPE_VARIO:
+        case CRSF_FRAMETYPE_BARO_ALT:
+        case CRSF_FRAMETYPE_VIDEO_TRANSMITTER:
+        case CRSF_FRAMETYPE_FLIGHT_MODE:
+        case CRSF_FRAMETYPE_DEVICE_INFO:
+        case CRSF_FRAMETYPE_CONFIG_READ:
+        case CRSF_FRAMETYPE_CONFIG_WRITE:
+        case CRSF_FRAMETYPE_RADIO_ID:
+            ESP_LOGD(TAG, "Received frame type 0x%02X (not implemented)", type);
+            break;
+
         default:
-            ESP_LOGD(TAG, "Unhandled frame type: 0x%02X", type);
+            ESP_LOGW(TAG, "Unknown frame type: 0x%02X", type);
             break;
     }
 }
 
-/* ---------------- Public API Methods ---------------- */
+/* ---------------- Public Methods ---------------- */
 
-void CRSF::poll(void)
+void CRSF::poll(bool channels_only)
 {
     if (!initialized) {
+        ESP_LOGW(TAG, "CRSF not initialized");
         return;
     }
 
-    // Read all pending bytes from UART and feed parser
-    uint8_t rx_buf[128];
-    int rx_len = 0;
-    do {
-        rx_len = uart_read_bytes(uart, rx_buf, sizeof(rx_buf), 0);
-        for (int i = 0; i < rx_len; ++i) {
-            uint8_t byte = rx_buf[i];
+    // Read available bytes from UART
+    size_t available = 0;
+    uart_get_buffered_data_len(uart, &available);
 
-            if (idx == 0) {
-                // Waiting for SYNC
-                if (byte == CRSF_SYNC_BYTE) {
-                    buffer[idx++] = byte;
-                }
-                continue;
+    if (available == 0) {
+        return;
+    }
+
+    uint8_t data[64];
+    int read_len = uart_read_bytes(uart, data, available < sizeof(data) ? available : sizeof(data), 0);
+
+    if (read_len <= 0) {
+        return;
+    }
+
+    // Process each received byte
+    for (int i = 0; i < read_len; i++) {
+        uint8_t byte = data[i];
+
+        if (idx == 0) {
+            // Looking for sync byte
+            if (byte == CRSF_SYNC_BYTE) {
+                buffer[idx++] = byte;
             }
-
-            // Save byte
-            buffer[idx++] = byte;
-
-            if (idx == 2) {
-                // We just stored LEN byte
-                uint8_t len_field = byte;
-                if (len_field < 2 || len_field > CRSF_MAX_PAYLOAD_LEN) {
-                    // Invalid length, reset
-                    ESP_LOGD(TAG, "Invalid length field: %d", len_field);
-                    idx = 0;
-                    continue;
-                }
-                expected_len = len_field + 2; // total bytes (SYNC+LEN) + len_field
-            }
-
-            if (expected_len && idx >= expected_len + 1) {
-                // +1 for CRC byte
-                process_frame();
-                // Reset for next frame
+        } else if (idx == 1) {
+            // Length field
+            if (byte >= 2 && byte <= CRSF_MAX_PAYLOAD_LEN + 2) {
+                buffer[idx++] = byte;
+                expected_len = byte + 2; // +2 for SYNC and LEN bytes
+            } else {
+                // Invalid length, reset
                 idx = 0;
                 expected_len = 0;
             }
+        } else {
+            // Payload and CRC
+            buffer[idx++] = byte;
 
-            if (idx >= sizeof(buffer)) {
-                // Buffer overflow protection
-                ESP_LOGW(TAG, "Buffer overflow, resetting");
+            if (idx >= expected_len) {
+                // Complete frame received
+                process_frame(channels_only);
                 idx = 0;
                 expected_len = 0;
             }
         }
-    } while (rx_len > 0);
+
+        // Safety check to prevent buffer overflow
+        if (idx >= CRSF_MAX_FRAME_LEN) {
+            ESP_LOGW(TAG, "Buffer overflow, resetting");
+            idx = 0;
+            expected_len = 0;
+        }
+    }
 }
 
 bool CRSF::getChannels(crsf_channels_t *out)
 {
-    if (!out || !initialized) {
+    if (!initialized || !out) {
         return false;
     }
-    if (!fresh_channels) {
-        return false;
+
+    if (fresh_channels) {
+        memcpy(out, &channels, sizeof(crsf_channels_t));
+        fresh_channels = false;
+        return true;
     }
-    memcpy(out, &channels, sizeof(crsf_channels_t));
-    fresh_channels = false;
-    return true;
+
+    return false;
 }
 
 bool CRSF::sendChannels(const crsf_channels_t *channels)
 {
-    if (!channels) {
+    if (!initialized || !channels) {
+        ESP_LOGW(TAG, "CRSF not initialized or null channels");
         return false;
     }
+
     return sendChannelsRaw(channels->channels);
 }
 
 bool CRSF::sendChannelsRaw(const uint16_t channels[16])
 {
-    if (!channels || !initialized) {
+    if (!initialized || !channels) {
+        ESP_LOGW(TAG, "CRSF not initialized or null channels");
         return false;
     }
 
-    // Validate channel values are within valid range
-    for (int i = 0; i < 16; i++) {
-        if (channels[i] > 1984) { // 11-bit max value
-            ESP_LOGW(TAG, "Channel %d value %d exceeds 11-bit range", i, channels[i]);
-            return false;
-        }
-    }
-
-    // Pack channels into 22-byte payload
-    uint8_t payload[22] = {0};
+    uint8_t payload[22]; // 16 channels * 11 bits = 176 bits = 22 bytes
     pack_channels(channels, payload);
 
-    // Send RC channels frame
     return send_frame(CRSF_FRAMETYPE_RC_CHANNELS_PACKED, payload, sizeof(payload));
 }
 
 bool CRSF::getLinkStatistics(crsf_link_statistics_t *out)
 {
-    if (!out || !initialized) {
+    if (!initialized || !out) {
         return false;
     }
-    if (!fresh_link_stats) {
-        return false;
+
+    if (fresh_link_stats) {
+        memcpy(out, &link_stats, sizeof(crsf_link_statistics_t));
+        fresh_link_stats = false;
+        return true;
     }
-    memcpy(out, &link_stats, sizeof(crsf_link_statistics_t));
-    fresh_link_stats = false;
-    return true;
+
+    return false;
 }
 
 bool CRSF::getBattery(crsf_battery_t *out)
 {
-    if (!out || !initialized) {
+    if (!initialized || !out) {
         return false;
     }
-    if (!fresh_battery) {
-        return false;
+
+    if (fresh_battery) {
+        memcpy(out, &battery, sizeof(crsf_battery_t));
+        fresh_battery = false;
+        return true;
     }
-    memcpy(out, &battery, sizeof(crsf_battery_t));
-    fresh_battery = false;
-    return true;
+
+    return false;
 }
 
 bool CRSF::getAttitude(crsf_attitude_t *out)
 {
-    if (!out || !initialized) {
+    if (!initialized || !out) {
         return false;
     }
-    if (!fresh_attitude) {
-        return false;
+
+    if (fresh_attitude) {
+        memcpy(out, &attitude, sizeof(crsf_attitude_t));
+        fresh_attitude = false;
+        return true;
     }
-    memcpy(out, &attitude, sizeof(crsf_attitude_t));
-    fresh_attitude = false;
-    return true;
+
+    return false;
 }
 
 uint16_t CRSF::toMicroseconds(uint16_t crsf_value)
 {
     // Convert CRSF value (172-1811) to microseconds (988-2012)
+    // Linear mapping: us = 988 + (crsf - 172) * (2012 - 988) / (1811 - 172)
     if (crsf_value < CRSF_CHANNEL_MIN) {
-        crsf_value = CRSF_CHANNEL_MIN;
-    } else if (crsf_value > CRSF_CHANNEL_MAX) {
-        crsf_value = CRSF_CHANNEL_MAX;
+        return 988;
     }
-    
-    // Linear interpolation: 172-1811 -> 988-2012
+    if (crsf_value > CRSF_CHANNEL_MAX) {
+        return 2012;
+    }
+
     return 988 + ((crsf_value - CRSF_CHANNEL_MIN) * 1024) / CRSF_CHANNEL_RANGE;
 }
 
@@ -505,93 +532,47 @@ uint16_t CRSF::fromMicroseconds(uint16_t us_value)
 {
     // Convert microseconds (988-2012) to CRSF value (172-1811)
     if (us_value < 988) {
-        us_value = 988;
-    } else if (us_value > 2012) {
-        us_value = 2012;
+        return CRSF_CHANNEL_MIN;
     }
-    
-    // Linear interpolation: 988-2012 -> 172-1811
+    if (us_value > 2012) {
+        return CRSF_CHANNEL_MAX;
+    }
+
     return CRSF_CHANNEL_MIN + ((us_value - 988) * CRSF_CHANNEL_RANGE) / 1024;
 }
 
 /* ---------------- Legacy C API Implementation ---------------- */
 
-// Global instance for legacy C API
-static CRSF* g_legacy_crsf = nullptr;
-
-extern "C" {
+// Global CRSF instance for legacy C API
+static CRSF* legacy_crsf = nullptr;
 
 void crsf_init(uart_port_t uart_num, int rx_pin, int tx_pin, uint32_t baud)
 {
-    if (g_legacy_crsf) {
-        delete g_legacy_crsf;
+    if (legacy_crsf) {
+        delete legacy_crsf;
     }
-    g_legacy_crsf = new CRSF(uart_num, rx_pin, tx_pin, baud);
+    legacy_crsf = new CRSF(uart_num, rx_pin, tx_pin, baud);
 }
 
 void crsf_poll(void)
 {
-    if (g_legacy_crsf) {
-        g_legacy_crsf->poll();
+    if (legacy_crsf) {
+        legacy_crsf->poll();
     }
 }
 
 bool crsf_get_channels(crsf_channels_t *out)
 {
-    if (g_legacy_crsf) {
-        return g_legacy_crsf->getChannels(out);
+    if (legacy_crsf) {
+        return legacy_crsf->getChannels(out);
     }
     return false;
 }
 
 bool crsf_send_channels(const crsf_channels_t *channels)
 {
-    if (g_legacy_crsf) {
-        return g_legacy_crsf->sendChannels(channels);
+    if (legacy_crsf) {
+        return legacy_crsf->sendChannels(channels);
     }
     return false;
 }
-
-bool crsf_send_channels_raw(const uint16_t channels[16])
-{
-    if (g_legacy_crsf) {
-        return g_legacy_crsf->sendChannelsRaw(channels);
-    }
-    return false;
-}
-
-bool crsf_get_link_statistics(crsf_link_statistics_t *out)
-{
-    if (g_legacy_crsf) {
-        return g_legacy_crsf->getLinkStatistics(out);
-    }
-    return false;
-}
-
-bool crsf_get_battery(crsf_battery_t *out)
-{
-    if (g_legacy_crsf) {
-        return g_legacy_crsf->getBattery(out);
-    }
-    return false;
-}
-
-bool crsf_get_attitude(crsf_attitude_t *out)
-{
-    if (g_legacy_crsf) {
-        return g_legacy_crsf->getAttitude(out);
-    }
-    return false;
-}
-
-uint16_t crsf_to_us(uint16_t crsf_value)
-{
-    return CRSF::toMicroseconds(crsf_value);
-}
-
-uint16_t us_to_crsf(uint16_t us_value)
-{
-    return CRSF::fromMicroseconds(us_value);
-}
-
-} // extern "C"

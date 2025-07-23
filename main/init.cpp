@@ -1,18 +1,20 @@
 #include "init.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
 #include <esp_log.h>
 #include <main.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/queue.h>
+
 
 #include "ir-camera.h"
 #include "flight-controller.h"
 #include "crsf-controller.h"
 #include "gimbal-controller.h"
+#include "main.h"
 
 #define TAG "INIT"
 
-QueueHandle_t ir_camera_queue;
+SemaphoreHandle_t camera_data_mutex;
 
 void init(void) {
     esp_log_level_set(TAG, ESP_LOG_INFO);
@@ -27,14 +29,9 @@ void init(void) {
     gimbal_controller_init();
     ESP_LOGI(TAG, "Finished Initializing Gimbal Control");
     ESP_LOGI(TAG, "Finished Running Init Programs");
-
-    ESP_LOGI(TAG, "Creating IR Camera Queue");
-    ir_camera_queue = xQueueCreate(10, sizeof(camera_data_t));
-    ESP_LOGI(TAG, "Finished Creating IR Camera Queue");
-    ESP_LOGI(TAG, "Creating Gimbal Controller Queue");
-    gimbal_controller_queue=xQueueCreate(10,sizeof(gimbal_controller_input));
-    ESP_LOGI(TAG, "Finished Creating Gimbal Controller Queue");
-    ESP_LOGI(TAG, "Finished Running Queue Creation Programs");
+    ESP_LOGI(TAG, "Running Mutex Creation Programs");
+    camera_data_mutex=xSemaphoreCreateMutex();
+    ESP_LOGI(TAG, "Finished Running Mutex Creation Programs");
 
     ESP_LOGI(TAG, "Setup Complete");
 }

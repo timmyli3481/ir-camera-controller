@@ -5,10 +5,9 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-#include "freertos/FreeRTOS.h"
-#include "freertos/queue.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
 
-extern QueueHandle_t ir_camera_queue;
-extern QueueHandle_t gimbal_controller_queue;
+extern SemaphoreHandle_t camera_data_mutex;
 
 #endif //MAIN_H

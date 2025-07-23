@@ -7,4 +7,6 @@
 
 void crsf_controller_init();
 
+void crsf_controller_task(void *pvParameters);
+
 #endif //CRSF_TASK_H
