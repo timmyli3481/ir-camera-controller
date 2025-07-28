@@ -104,8 +104,8 @@ void gimbal_controller_task(void *pv) {
             gimbal_state_g.tracking = true;
 
             // Apply relative adjustments to current angles
-            float new_servo_0_angle = gimbal_state_g.servo_0_angle + current_input.angle_x;
-            float new_servo_1_angle = gimbal_state_g.servo_1_angle + current_input.angle_y;
+            float new_servo_0_angle = gimbal_state_g.servo_0_angle + current_input.angle_x/5;
+            float new_servo_1_angle = gimbal_state_g.servo_1_angle + current_input.angle_y/5;
 
             // Apply the new calculated angles (which will also clamp them)
             apply_angle(new_servo_0_angle, new_servo_1_angle);
@@ -113,6 +113,10 @@ void gimbal_controller_task(void *pv) {
             ESP_LOGD(TAG, "Tracking fire: current_x=%f (adjusted by %f), current_y=%f (adjusted by %f)",
                      gimbal_state_g.servo_0_angle, current_input.angle_x,
                      gimbal_state_g.servo_1_angle, current_input.angle_y);
+
+
+            vTaskDelay(100 / portTICK_PERIOD_MS);
+
 
         } else if (newDataAvailable && !current_input.found_fire) {
             ESP_LOGD(TAG, "No fire found in new data. Switching to sweep.");

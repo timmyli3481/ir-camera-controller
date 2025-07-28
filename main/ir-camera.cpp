@@ -90,7 +90,7 @@ void decodeCameraData(const char *line)
         l_camera_data.pixels     = 0;
         l_camera_data.cx         = 0;
         l_camera_data.cy         = 0;
-        ESP_LOGI(TAG, "Decoded: NO_FIRE");
+        // ESP_LOGI(TAG, "Decoded: NO_FIRE");
         return;
     }
 

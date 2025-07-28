@@ -8,6 +8,7 @@
 #include "flight-controller.h"
 
 #include <gimbal-controller.h>
+#include <water-controller.h>
 #define MAIN_APP_TAG "MAIN_APP" // Renamed TAG to avoid conflict with ir-camera.c
 
 extern "C" void app_main(void)
@@ -35,19 +36,26 @@ extern "C" void app_main(void)
         ESP_LOGI(MAIN_APP_TAG, "Gimbal control task created successfully");
     }
 
-    BaseType_t CrsfTaskxReturned = xTaskCreatePinnedToCore(crsf_controller_task, "gimbal_task", 4096, NULL, 10, NULL,0);
-    if (CrsfTaskxReturned != pdPASS) {
-        ESP_LOGE(MAIN_APP_TAG, "Failed to create Crsf control task");
-    } else {
-        ESP_LOGI(MAIN_APP_TAG, "Crsf control task created successfully");
-    }
-
-    BaseType_t FlightTaskxReturned = xTaskCreatePinnedToCore(flight_controller_task, "flight_task", 4096, NULL, 10, NULL,0);
-    if (FlightTaskxReturned != pdPASS) {
-        ESP_LOGE(MAIN_APP_TAG, "Failed to create Flight control task");
-    } else {
-        ESP_LOGI(MAIN_APP_TAG, "Flight control task created successfully");
-    }
+    // BaseType_t CrsfTaskxReturned = xTaskCreatePinnedToCore(crsf_controller_task, "gimbal_task", 4096, NULL, 10, NULL,0);
+    // if (CrsfTaskxReturned != pdPASS) {
+    //     ESP_LOGE(MAIN_APP_TAG, "Failed to create Crsf control task");
+    // } else {
+    //     ESP_LOGI(MAIN_APP_TAG, "Crsf control task created successfully");
+    // }
+    //
+    // BaseType_t FlightTaskxReturned = xTaskCreatePinnedToCore(flight_controller_task, "flight_task", 4096, NULL, 10, NULL,0);
+    // if (FlightTaskxReturned != pdPASS) {
+    //     ESP_LOGE(MAIN_APP_TAG, "Failed to create Flight control task");
+    // } else {
+    //     ESP_LOGI(MAIN_APP_TAG, "Flight control task created successfully");
+    // }
+    //
+    // BaseType_t WaterTaskxReturned = xTaskCreatePinnedToCore(water_controller_task, "water_task", 4096, NULL, 10, NULL,0);
+    // if (WaterTaskxReturned != pdPASS) {
+    //     ESP_LOGE(MAIN_APP_TAG, "Failed to create Water control task");
+    // } else {
+    //     ESP_LOGI(MAIN_APP_TAG, "Water control task created successfully");
+    // }
 
     // Option 2: Delete app_main task itself (if no further main_task activity is needed)
     ESP_LOGI(MAIN_APP_TAG, "Setup complete, deleting main task.");
